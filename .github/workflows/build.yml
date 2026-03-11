@@ -76,7 +76,7 @@ jobs:
       repos: ${{ steps.generate-matrix.outputs.repos }}
     steps:
       - name: "😄 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "😆 Generate Matrix"
         id: generate-matrix
@@ -646,7 +646,7 @@ jobs:
             -j$(nproc --all)
         
       - name: "📤 Save ccache Cache"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
