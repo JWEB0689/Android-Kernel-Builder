@@ -646,7 +646,7 @@ jobs:
             -j$(nproc --all)
         
       - name: "📤 Save ccache Cache"
-        uses: actions/cache@v6
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
