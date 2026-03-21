@@ -690,7 +690,7 @@ jobs:
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
       
       - name: "⬆️ Upload Kernel Artifact"
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v5
         with:
           name: Anykernel3_${{ env.kernelBranch }}_${{ env.BUILD_TIME }}.zip
           path: ./${{ env.kernelDir }}/${{ env.kernelName }}/${{ env.kernelBranch }}_${{ env.BUILD_TIME }}.zip
