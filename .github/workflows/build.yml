@@ -1,8 +1,8 @@
 name: "Build kernels"
 
 env:
-
-  OUT_DIR: "out"
+OUT_DIR: "out"
+FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   workflow_dispatch:
