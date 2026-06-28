@@ -72,7 +72,7 @@ on:
 jobs:
   Set-repos:
     name: "🐂 Parse repository"
-    runs-on: ubuntu-latest
+    runs-on: tenki-standard-medium-4c-8g
     outputs:
       repos: ${{ steps.generate-matrix.outputs.repos }}
     steps:
@@ -115,10 +115,9 @@ jobs:
           echo "$repos" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-
   Build-Kernel:
     name: "🐎 Build kernel"
-    runs-on: ubuntu-latest
+    runs-on: tenki-standard-medium-4c-8g
     needs:
       - Set-repos
     strategy:
@@ -183,10 +182,10 @@ jobs:
               echo "Unsupported repository source: $PRIVATE_SOURCE"
               exit 1
             fi
-      
+
             # Debugging: Print the final URL (mask the token for security)
             echo "Final URL: ${REPO_PREFIX}${PRIVATE_SOURCE}"
-      
+
             # Clone the private repository using the dynamic prefix
             git clone --recursive --branch ${{ github.event.inputs.kernelBranch }} \
               "$REPO_PREFIX$PRIVATE_SOURCE" ${{ env.kernelName }} --depth=1
@@ -199,7 +198,7 @@ jobs:
       - name: "💫 Get Toolchains"
         run: |
           set -e  # Exit on errors
-      
+
           # Function to fetch latest release tar.gz URL from GitHub
           get_latest_github_release() {
             local repo_url="$1"
@@ -209,10 +208,10 @@ jobs:
               echo "❌ Failed to fetch latest release from $repo_url!"
               exit 1
             fi
-      
+
             printf "%s" "$latest_url"  # Use printf to output only the URL
           }
-      
+
           # Determine the Clang URL dynamically
           case "${{ github.event.inputs.clangCompiler }}" in
             "ZyC Clang")
@@ -232,17 +231,17 @@ jobs:
               exit 1
               ;;
           esac
-      
+
           echo "✅ Clang URL: $clang_url"
-      
+
           # Create clang directory
           mkdir -p clang
-      
+
           # Check if it's an archive or a Git repo
           if [[ "$clang_url" == *.tar.gz ]]; then
             echo "🚀 Downloading latest Clang from: $clang_url..."
             wget --progress=bar:force -O "clang/clang.tar.gz" "$clang_url" || { echo "❌ Failed to download Clang!"; exit 1; }
-      
+
             # Extract Clang
             echo "📦 Extracting Clang..."
             tar -xf clang/clang.tar.gz -C clang || { echo "❌ Extraction failed!"; exit 1; }
@@ -251,7 +250,7 @@ jobs:
             echo "🚀 Cloning Clang from $clang_url..."
             git clone --recursive --depth=1 "$clang_url" clang || { echo "❌ Cloning failed!"; exit 1; }
           fi
-      
+
           # Find Clang's bin directory
           if [ -d "clang/bin" ]; then
             CLANG_PATH="${{ github.workspace }}/clang/bin"
@@ -259,18 +258,18 @@ jobs:
             CLANG_PATH=$(find clang -type d -name "bin" | head -n 1)
             CLANG_PATH="${{ github.workspace }}/${CLANG_PATH}"
           fi
-      
+
           # Ensure Clang binary exists
           if [ ! -f "$CLANG_PATH/clang" ]; then
             echo "❌ Clang binary not found in $CLANG_PATH! Build might fail."
             ls -R clang  # Debugging: Show extracted files
             exit 1
           fi
-      
+
           echo "✅ Using Clang from $CLANG_PATH"
           echo "CLANG_PATH=$CLANG_PATH" >> $GITHUB_ENV
           echo "$CLANG_PATH" >> $GITHUB_PATH  # Ensures path is updated
-      
+
           export PATH="$CLANG_PATH:$PATH"
           export CLANG_TRIPLE="aarch64-linux-gnu-"
           export CC="ccache clang"
@@ -280,10 +279,11 @@ jobs:
           export OBJCOPY="llvm-objcopy"
           export OBJDUMP="llvm-objdump"
           export STRIP="llvm-strip"
-      
+
           echo "⚙️ Using Clang version:"
           clang --version || echo "❌ Clang not found in PATH!" 
-    
+
+
       - name: 📐 Set swap to 20G
         uses: pierotofy/set-swap-space@master
         with:
@@ -301,6 +301,7 @@ jobs:
             echo "CXX='ccache clang++'" >> $GITHUB_ENV
             echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
           
+
       - name: "😎 Set args for GKI"
         id: generate-args
         working-directory: ./${{ env.kernelDir }}
@@ -344,7 +345,7 @@ jobs:
       - name: "🛠 Set localversion name in defconfig"
         working-directory: ./${{ env.kernelDir }}/${{ env.kernelName }}
         env:
-          LOCALVERSION: ${{ github.event.inputs.localVersion }}  # Set LOCALVERSION from input
+          LOCALVERSION: ${{ github.event.inputs.localVersion }} # Set LOCALVERSION from input
         run: |
           # Set CONFIG_LOCALVERSION in the defconfig file
           if [ -n "$LOCALVERSION" ]; then
@@ -462,7 +463,8 @@ jobs:
           else
             echo "KSU Build"
           fi
-  
+
+
       - name: "👍 Make defconfig"
         working-directory: ./${{ env.kernelDir }}/${{ env.kernelName }}
         env:
@@ -473,7 +475,7 @@ jobs:
 
       - name: 😋 Setup KSU SUSFS
         if: ${{ github.event.inputs.withKernelSUSFS == 'true' }}
-        env: 
+        env:
           ARCH: ${{ steps.generate-args.outputs.ARCH }}
           DEFCONFIG: ./${{ env.kernelName }}/arch/${{ env.ARCH }}/configs/${{ env.DEFCONFIG_NAME }}
           SFS_BRANCH: ${{ github.event.inputs.susfsBranch }}
@@ -623,14 +625,14 @@ jobs:
         run: |
           export KBUILD_BUILD_USER="リアム"
           export KBUILD_BUILD_HOST="belowzeroiq"
-        
+
           # Enable CCache
           export CCACHE_DIR="${{ github.workspace }}/.ccache"
           export CCACHE_NOCOMPRESS=true
           export CCACHE_MAXSIZE=10G
           export CCACHE_CPP2=yes
           ccache -z  # Reset stats
-        
+
           # Build Kernel
           make ${args} \
             LLVM=1 \
@@ -645,13 +647,14 @@ jobs:
             KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
             KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
             -j$(nproc --all)
-        
+
+
       - name: "📤 Save ccache Cache"
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
-        
+
       - name: "💛 Upload Image"
         uses: actions/upload-artifact@v6
         with:
@@ -664,10 +667,10 @@ jobs:
         working-directory: ./${{ env.kernelDir }}/${{ env.kernelName }}
         run: |
           set -e  # Exit on errors
-      
+
           # Clone AnyKernel3 if not already present
           [ ! -d "AnyKernel3" ] && git clone https://github.com/topnotchfreaks/AnyKernel3.git --depth=1
-      
+
           # Find kernel image
           KERNEL_IMAGE_PATH="../${{ env.OUT_DIR }}/arch/${{ env.ARCH }}/boot/Image"
           if [ ! -f "$KERNEL_IMAGE_PATH" ]; then
@@ -678,10 +681,10 @@ jobs:
               exit 1
             fi
           fi
-      
+
           echo "Found kernel image at: $KERNEL_IMAGE_PATH"
           cp "$KERNEL_IMAGE_PATH" AnyKernel3/Image
-      
+
           # Pack the kernel
           ZIP_NAME="${{ env.kernelBranch }}_${{ env.BUILD_TIME }}.zip"
           cd AnyKernel3
@@ -689,7 +692,8 @@ jobs:
           cd ..
 
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
-      
+
+
       - name: "⬆️ Upload Kernel Artifact"
         uses: actions/upload-artifact@v6
         with:
