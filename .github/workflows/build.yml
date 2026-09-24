@@ -72,7 +72,7 @@ on:
 jobs:
   Set-repos:
     name: "🐂 Parse repository"
-    runs-on: tenki-standard-medium-4c-8g
+    runs-on: ubuntu-latest
     outputs:
       repos: ${{ steps.generate-matrix.outputs.repos }}
     steps:
@@ -117,7 +117,7 @@ jobs:
 
   Build-Kernel:
     name: "🐎 Build kernel"
-    runs-on: tenki-standard-medium-4c-8g
+    runs-on: ubuntu-latest
     needs:
       - Set-repos
     strategy:
